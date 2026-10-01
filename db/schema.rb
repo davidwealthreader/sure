@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_26_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_01_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -637,6 +637,50 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_26_090000) do
     t.datetime "updated_at", null: false
     t.index ["family_id"], name: "index_enable_banking_items_on_family_id"
     t.index ["status"], name: "index_enable_banking_items_on_status"
+  end
+
+  create_table "wealth_reader_accounts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "account_id"
+    t.string "account_type"
+    t.datetime "created_at", null: false
+    t.string "currency"
+    t.decimal "current_balance", precision: 19, scale: 4
+    t.string "iban"
+    t.jsonb "institution_metadata"
+    t.string "name"
+    t.jsonb "raw_payload"
+    t.jsonb "raw_transactions_payload"
+    t.string "uid"
+    t.datetime "updated_at", null: false
+    t.uuid "wealth_reader_item_id", null: false
+    t.index ["account_id"], name: "index_wealth_reader_accounts_on_account_id"
+    t.index ["wealth_reader_item_id", "uid"], name: "idx_wr_accounts_item_uid", unique: true
+    t.index ["wealth_reader_item_id"], name: "index_wealth_reader_accounts_on_wealth_reader_item_id"
+  end
+
+  create_table "wealth_reader_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "api_key"
+    t.string "country_code"
+    t.datetime "created_at", null: false
+    t.string "entity_code"
+    t.uuid "family_id", null: false
+    t.string "institution_name"
+    t.string "name"
+    t.boolean "pending_account_setup", default: false
+    t.text "pkce_code_verifier"
+    t.string "pkce_nonce"
+    t.text "pkce_redirect_uri"
+    t.string "pkce_state"
+    t.jsonb "raw_payload"
+    t.boolean "scheduled_for_deletion", default: false
+    t.string "status", default: "good"
+    t.datetime "sync_start_date"
+    t.text "token"
+    t.datetime "updated_at", null: false
+    t.index ["family_id"], name: "index_wealth_reader_items_on_family_id"
+    t.index ["pkce_nonce"], name: "index_wealth_reader_items_on_pkce_nonce"
+    t.index ["pkce_state"], name: "index_wealth_reader_items_on_pkce_state"
+    t.index ["status"], name: "index_wealth_reader_items_on_status"
   end
 
   create_table "entries", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -2463,6 +2507,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_26_090000) do
   add_foreign_key "debug_log_entries", "users", on_delete: :nullify
   add_foreign_key "enable_banking_accounts", "enable_banking_items"
   add_foreign_key "enable_banking_items", "families"
+  add_foreign_key "wealth_reader_accounts", "wealth_reader_items"
+  add_foreign_key "wealth_reader_items", "families"
   add_foreign_key "entries", "account_statements", column: "reconciled_by_statement_id", on_delete: :nullify
   add_foreign_key "entries", "accounts", on_delete: :cascade
   add_foreign_key "entries", "entries", column: "parent_entry_id", on_delete: :cascade

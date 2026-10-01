@@ -1,0 +1,132 @@
+<%# locals: (wealth_reader_item:) %>
+
+<%= tag.div id: dom_id(wealth_reader_item) do %>
+  <%= render DS::Disclosure.new(variant: :card, open: true) do |disclosure| %>
+    <% disclosure.with_summary_content do %>
+      <div class="flex items-center justify-between gap-2 focus-visible:outline-hidden">
+        <div class="flex items-center gap-2">
+          <%= icon "chevron-right", class: "group-open:rotate-90 motion-safe:transition-transform motion-safe:duration-150" %>
+
+          <div class="flex items-center justify-center h-8 w-8 bg-success/10 rounded-full">
+            <% if wealth_reader_item.logo.attached? %>
+              <%= image_tag wealth_reader_item.logo, class: "rounded-full h-full w-full", loading: "lazy" %>
+            <% else %>
+              <div class="flex items-center justify-center">
+                <%= tag.p wealth_reader_item.institution_display_name.to_s.first.to_s.upcase, class: "text-success text-xs font-medium" %>
+              </div>
+            <% end %>
+          </div>
+
+          <div class="pl-1 text-sm">
+            <div class="flex items-center gap-2">
+              <%= tag.p wealth_reader_item.institution_display_name, class: "font-medium text-primary" %>
+              <% if wealth_reader_item.scheduled_for_deletion? %>
+                <p class="text-destructive text-sm animate-pulse"><%= t(".deletion_in_progress") %></p>
+              <% end %>
+            </div>
+            <p class="text-xs text-secondary"><%= t(".provider_name") %></p>
+            <% if wealth_reader_item.syncing? %>
+              <div class="text-secondary flex items-center gap-1">
+                <%= icon "loader", size: "sm", class: "animate-spin" %>
+                <%= tag.span t(".syncing") %>
+              </div>
+            <% elsif wealth_reader_item.requires_update? %>
+              <div class="text-warning flex items-center gap-1">
+                <%= icon "alert-triangle", size: "sm", color: "warning" %>
+                <%= tag.span t(".reconnect") %>
+              </div>
+            <% else %>
+              <p class="text-secondary">
+                <% if wealth_reader_item.last_synced_at %>
+                  <%= t(".last_synced", time: time_ago_in_words(wealth_reader_item.last_synced_at)) %>
+                  <% if wealth_reader_item.sync_status_summary %>
+                    · <%= wealth_reader_item.sync_status_summary %>
+                  <% end %>
+                <% else %>
+                  <%= t(".never_synced") %>
+                <% end %>
+              </p>
+            <% end %>
+          </div>
+        </div>
+
+        <% if Current.user&.admin? %>
+          <div class="flex items-center gap-2">
+            <% if wealth_reader_item.requires_update? %>
+              <%= button_to reauthorize_wealth_reader_item_path(wealth_reader_item),
+                            method: :post,
+                            class: "inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg text-inverse bg-warning hover:opacity-90 transition-colors",
+                            data: { turbo: false } do %>
+                <%= icon "refresh-cw", size: "sm" %>
+                <%= t(".update") %>
+              <% end %>
+            <% elsif Rails.env.development? && wealth_reader_item.session_valid? %>
+              <%= icon(
+                "refresh-cw",
+                as_button: true,
+                href: sync_wealth_reader_item_path(wealth_reader_item)
+              ) %>
+            <% end %>
+
+            <%= render DS::Menu.new do |menu| %>
+              <% menu.with_item(
+                variant: "button",
+                text: t(".delete"),
+                icon: "trash-2",
+                href: wealth_reader_item_path(wealth_reader_item),
+                method: :delete,
+                confirm: CustomConfirm.for_resource_deletion(wealth_reader_item.institution_display_name, high_severity: true)
+              ) %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% unless wealth_reader_item.scheduled_for_deletion? %>
+      <div class="space-y-4 mt-4">
+        <% if wealth_reader_item.accounts.any? %>
+          <%= render "accounts/index/account_groups", accounts: wealth_reader_item.accounts %>
+        <% end %>
+
+        <% if defined?(@wealth_reader_sync_stats_map) && @wealth_reader_sync_stats_map %>
+          <% stats = @wealth_reader_sync_stats_map[wealth_reader_item.id] || {} %>
+          <% latest_sync_error = defined?(@wealth_reader_latest_sync_error_map) && @wealth_reader_latest_sync_error_map ? @wealth_reader_latest_sync_error_map[wealth_reader_item.id] : nil %>
+        <% else %>
+          <% latest_sync = wealth_reader_item.syncs.ordered.first %>
+          <% stats = latest_sync&.sync_stats || {} %>
+          <% latest_sync_error = latest_sync&.error %>
+        <% end %>
+        <% if latest_sync_error.present? && stats.is_a?(Hash) %>
+          <% stats = stats.merge(
+            "total_errors" => 1,
+            "errors" => [{ "message" => latest_sync_error }]
+          ) %>
+        <% end %>
+        <%= render ProviderSyncSummary.new(
+          stats: stats,
+          provider_item: wealth_reader_item
+        ) %>
+
+        <% if wealth_reader_item.unlinked_accounts_count > 0 %>
+          <div class="p-4 flex flex-col gap-3 items-center justify-center">
+            <p class="text-primary font-medium text-sm"><%= t(".setup_needed") %></p>
+            <p class="text-secondary text-sm"><%= t(".setup_needed_description", count: wealth_reader_item.unlinked_accounts_count) %></p>
+            <%= render DS::Link.new(
+              text: t(".set_up_accounts"),
+              icon: "settings",
+              variant: "primary",
+              href: setup_accounts_wealth_reader_item_path(wealth_reader_item),
+              frame: :modal
+            ) %>
+          </div>
+        <% elsif wealth_reader_item.accounts.empty? && wealth_reader_item.wealth_reader_accounts.empty? %>
+          <div class="p-4 flex flex-col gap-3 items-center justify-center">
+            <p class="text-primary font-medium text-sm"><%= t(".no_accounts_found") %></p>
+            <p class="text-secondary text-sm"><%= t(".no_accounts_found_description") %></p>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+<% end %>

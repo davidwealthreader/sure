@@ -20,6 +20,7 @@ class AccountsController < ApplicationController
     @akahu_items = visible_provider_items(family.akahu_items.ordered.with_attached_logo.includes(:akahu_accounts))
     @up_items = visible_provider_items(family.up_items.ordered.with_attached_logo.includes(:up_accounts))
     @enable_banking_items = visible_provider_items(family.enable_banking_items.ordered.with_attached_logo)
+    @wealth_reader_items = visible_provider_items(family.wealth_reader_items.ordered.with_attached_logo)
     @coinstats_items = visible_provider_items(family.coinstats_items.ordered.with_attached_logo.includes(:coinstats_accounts, :accounts))
     @mercury_items = visible_provider_items(family.mercury_items.ordered.with_attached_logo.includes(:mercury_accounts))
     @brex_items = visible_provider_items(family.brex_items.ordered.with_attached_logo.includes(:accounts, brex_accounts: :account_provider))
@@ -341,6 +342,7 @@ class AccountsController < ApplicationController
         @akahu_items,
         @up_items,
         @enable_banking_items,
+        @wealth_reader_items,
         @coinstats_items,
         @mercury_items,
         @brex_items,
@@ -492,6 +494,14 @@ class AccountsController < ApplicationController
         latest_sync = item.latest_sync_record
         @enable_banking_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
         @enable_banking_latest_sync_error_map[item.id] = latest_sync&.error
+      end
+
+      @wealth_reader_sync_stats_map = {}
+      @wealth_reader_latest_sync_error_map = {}
+      @wealth_reader_items.each do |item|
+        latest_sync = item.latest_sync_record
+        @wealth_reader_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
+        @wealth_reader_latest_sync_error_map[item.id] = latest_sync&.error
       end
 
       # CoinStats sync stats

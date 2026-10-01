@@ -246,6 +246,26 @@ class Account < ApplicationRecord
       create_and_sync(attributes, skip_initial_sync: true)
     end
 
+    def create_from_wealth_reader_account(wealth_reader_account, account_type, subtype = nil)
+      balance = wealth_reader_account.current_balance || 0
+      if account_type == "CreditCard" || account_type == "Loan"
+        balance = balance.abs
+      end
+
+      create_and_sync(
+        {
+          family: wealth_reader_account.wealth_reader_item.family,
+          name: wealth_reader_account.name,
+          balance: balance,
+          cash_balance: balance,
+          currency: wealth_reader_account.currency || "EUR",
+          accountable_type: account_type,
+          accountable_attributes: subtype.present? ? { subtype: subtype } : {}
+        },
+        skip_initial_sync: true
+      )
+    end
+
     def create_from_enable_banking_account(enable_banking_account, account_type, subtype = nil)
       # Get the balance from Enable Banking
       balance = enable_banking_account.current_balance || 0

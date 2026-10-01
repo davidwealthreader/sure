@@ -209,6 +209,21 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :wealth_reader_items, only: [ :create, :update, :destroy ] do
+    collection do
+      get :callback
+    end
+    member do
+      post :sync
+      get :select_bank
+      post :authorize
+      post :reauthorize
+      get :setup_accounts
+      post :complete_account_setup
+      post :new_connection
+    end
+  end
+
   resources :enable_banking_items, only: [ :new, :create, :update, :destroy ] do
     collection do
       get :callback

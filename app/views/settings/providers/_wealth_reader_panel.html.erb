@@ -1,0 +1,96 @@
+<div id="wealth_reader-providers-panel" class="space-y-4">
+  <%
+    wr_link = link_to("Wealth Reader", "https://www.wealthreader.com/docs/en/oauth-backend/", target: "_blank", rel: "noopener noreferrer", class: "text-primary font-medium underline")
+  %>
+  <%= render "settings/providers/setup_steps",
+             steps: [
+               t("settings.providers.wealth_reader_panel.step_1_html", link: wr_link),
+               t("settings.providers.wealth_reader_panel.step_2"),
+               t("settings.providers.wealth_reader_panel.callback_url_instruction", callback_url: wealth_reader_callback_url)
+             ] %>
+
+  <% error_msg = local_assigns[:error_message] || @error_message %>
+  <% if error_msg.present? %>
+    <%= render DS::Alert.new(message: error_msg, variant: :error) %>
+  <% end %>
+
+  <%
+    family = local_assigns[:family] || Current.family
+    wealth_reader_item = family.wealth_reader_items.first_or_initialize(name: "Wealth Reader Connection")
+    is_new_record = wealth_reader_item.new_record?
+  %>
+
+  <%= styled_form_with model: wealth_reader_item,
+                       url: is_new_record ? wealth_reader_items_path : wealth_reader_item_path(wealth_reader_item),
+                       scope: :wealth_reader_item,
+                       method: is_new_record ? :post : :patch,
+                       data: { turbo: true },
+                       class: "space-y-3" do |form| %>
+    <%= form.select :country_code,
+                  options_for_select([
+                    ["Spain (ES)", "ES"],
+                    ["France (FR)", "FR"],
+                    ["Germany (DE)", "DE"],
+                    ["Italy (IT)", "IT"],
+                    ["Portugal (PT)", "PT"],
+                    ["Netherlands (NL)", "NL"],
+                    ["Belgium (BE)", "BE"],
+                    ["United Kingdom (GB)", "GB"]
+                  ], wealth_reader_item.country_code),
+                  { label: true, include_blank: t("settings.providers.wealth_reader_panel.select_country") },
+                  { label: t("settings.providers.wealth_reader_panel.country_label"), class: "form-field__input" } %>
+
+    <%= form.password_field :api_key,
+                            label: t("settings.providers.wealth_reader_panel.api_key_label"),
+                            placeholder: t("settings.providers.wealth_reader_panel.api_key_placeholder") %>
+
+    <div class="flex justify-end">
+      <%= form.submit is_new_record ? t("settings.providers.wealth_reader_panel.save_and_connect") : t("settings.providers.wealth_reader_panel.update_connection") %>
+    </div>
+  <% end %>
+
+  <% items = local_assigns[:wealth_reader_items] || @wealth_reader_items || family.wealth_reader_items.where.not(api_key: [nil, ""]) %>
+  <% if items&.any? %>
+    <div class="border-t border-primary pt-4 space-y-3">
+      <% items.each do |item| %>
+        <div class="flex items-center justify-between p-3 rounded-lg bg-container border border-primary">
+          <div>
+            <p class="text-sm font-medium text-primary"><%= item.institution_display_name %></p>
+            <p class="text-xs text-secondary">
+              <% if item.session_valid? %>
+                <%= t("settings.providers.wealth_reader_panel.connected") %>
+              <% elsif item.requires_update? %>
+                <%= t("settings.providers.wealth_reader_panel.reconnect_needed") %>
+              <% else %>
+                <%= t("settings.providers.wealth_reader_panel.ready_to_link") %>
+              <% end %>
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <% if item.session_valid? %>
+              <%= button_to t("settings.providers.wealth_reader_panel.sync"), sync_wealth_reader_item_path(item), method: :post, class: "inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium text-primary bg-container border border-primary" %>
+            <% elsif item.requires_update? %>
+              <%= button_to t("settings.providers.wealth_reader_panel.reconnect"), reauthorize_wealth_reader_item_path(item), method: :post, class: "inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium text-white bg-warning", data: { turbo: false } %>
+            <% else %>
+              <%= render DS::Link.new(text: t("settings.providers.wealth_reader_panel.connect_bank"), href: select_bank_wealth_reader_item_path(item), variant: :primary, frame: :modal) %>
+            <% end %>
+            <%= button_to t("settings.providers.wealth_reader_panel.remove"), wealth_reader_item_path(item), method: :delete, class: "text-xs text-destructive", data: { turbo_confirm: t("settings.providers.wealth_reader_panel.remove_confirm") } %>
+          </div>
+        </div>
+      <% end %>
+
+      <% item_for_new_connection = items.find(&:session_valid?) %>
+      <% if item_for_new_connection %>
+        <div class="flex justify-center pt-2">
+          <%= render DS::Button.new(
+            text: t("settings.providers.wealth_reader_panel.add_connection"),
+            icon: "plus",
+            href: new_connection_wealth_reader_item_path(item_for_new_connection),
+            variant: :primary,
+            data: { turbo_method: :post, turbo_frame: "modal" }
+          ) %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

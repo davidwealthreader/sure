@@ -1,0 +1,25 @@
+<%= turbo_frame_tag "modal" do %>
+  <%= render DS::Dialog.new do |dialog| %>
+    <% dialog.with_header(title: t(".title", default: "Set up Wealth Reader accounts")) %>
+    <% dialog.with_body do %>
+      <%= form_with url: complete_account_setup_wealth_reader_item_path(@wealth_reader_item), method: :post, class: "space-y-4" do %>
+        <% @unlinked_accounts.each do |account| %>
+          <div class="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary">
+            <div>
+              <p class="text-sm font-medium"><%= account.name %></p>
+              <p class="text-xs text-secondary"><%= account.iban || account.uid %> · <%= account.currency %></p>
+            </div>
+            <select name="account_types[<%= account.id %>]" class="form-field__input">
+              <option value="Depository">Depository</option>
+              <option value="CreditCard">Credit card</option>
+              <option value="skip">Skip</option>
+            </select>
+          </div>
+        <% end %>
+        <div class="flex justify-end">
+          <%= submit_tag t(".save", default: "Create accounts"), class: "btn btn--primary" %>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>

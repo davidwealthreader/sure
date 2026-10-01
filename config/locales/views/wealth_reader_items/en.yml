@@ -1,0 +1,43 @@
+---
+en:
+  wealth_reader_items:
+    authorize:
+      bank_required: Please select a bank.
+    callback:
+      authorization_error: "Authorization failed: %{error}"
+      invalid_callback: Invalid callback parameters.
+      item_not_found: Connection not found.
+      success: Connected. Your accounts are being synced.
+    complete_account_setup:
+      success: Successfully created %{count} accounts!
+    create:
+      success: Wealth Reader configured.
+    update:
+      success: Wealth Reader updated.
+    destroy:
+      success: Scheduled Wealth Reader connection for deletion.
+    select_bank:
+      title: Choose your bank
+      search_placeholder: Search banks
+      search_label: Search banks
+      no_banks: No banks found for this country.
+      credentials_required: Configure your Wealth Reader API key first.
+    setup_accounts:
+      title: Set up Wealth Reader accounts
+      save: Create accounts
+    wealth_reader_item:
+      deletion_in_progress: Deletion in progress
+      provider_name: Wealth Reader
+      syncing: Syncing...
+      reconnect: Reconnect
+      last_synced: Last synced %{time} ago
+      never_synced: Never synced
+      update: Update
+      delete: Delete
+      setup_needed: Setup needed
+      setup_needed_description:
+        one: 1 account imported from Wealth Reader needs to be set up
+        other: "%{count} accounts imported from Wealth Reader need to be set up"
+      set_up_accounts: Set up accounts
+      no_accounts_found: No accounts found
+      no_accounts_found_description: No accounts were found from Wealth Reader. Try syncing again.
